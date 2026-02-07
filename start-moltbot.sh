@@ -233,7 +233,7 @@ if (process.env.CLAUDE_SETUP_TOKEN) {
     // Subscription auth via setup-token - use built-in Anthropic catalog
     // No custom provider needed; auth-profiles.json handles authentication
     console.log('Using Claude subscription auth (setup-token)');
-    config.agents.defaults.model.primary = 'anthropic/claude-sonnet-4-5';
+    config.agents.defaults.model.primary = 'anthropic/claude-opus-4-6';
 } else if (isOpenAI) {
     // Create custom openai provider config with baseUrl override
     // Omit apiKey so moltbot falls back to OPENAI_API_KEY env var
