@@ -23,8 +23,14 @@ export function buildEnvVars(env: MoltbotEnv): Record<string, string> {
     }
   }
 
-  // Fall back to direct provider keys
-  if (!envVars.ANTHROPIC_API_KEY && env.ANTHROPIC_API_KEY) {
+  // Claude subscription auth via setup-token (alternative to API key)
+  // When setup-token is used, don't pass ANTHROPIC_API_KEY so OpenClaw uses token auth
+  if (env.CLAUDE_SETUP_TOKEN) {
+    envVars.CLAUDE_SETUP_TOKEN = env.CLAUDE_SETUP_TOKEN;
+  }
+
+  // Fall back to direct provider keys (skip if using setup-token)
+  if (!env.CLAUDE_SETUP_TOKEN && !envVars.ANTHROPIC_API_KEY && env.ANTHROPIC_API_KEY) {
     envVars.ANTHROPIC_API_KEY = env.ANTHROPIC_API_KEY;
   }
   if (!envVars.OPENAI_API_KEY && env.OPENAI_API_KEY) {

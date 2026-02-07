@@ -229,7 +229,12 @@ if (process.env.SLACK_BOT_TOKEN && process.env.SLACK_APP_TOKEN) {
 const baseUrl = (process.env.AI_GATEWAY_BASE_URL || process.env.ANTHROPIC_BASE_URL || '').replace(/\/+$/, '');
 const isOpenAI = baseUrl.endsWith('/openai');
 
-if (isOpenAI) {
+if (process.env.CLAUDE_SETUP_TOKEN) {
+    // Subscription auth via setup-token - use built-in Anthropic catalog
+    // No custom provider needed; auth-profiles.json handles authentication
+    console.log('Using Claude subscription auth (setup-token)');
+    config.agents.defaults.model.primary = 'anthropic/claude-sonnet-4-5';
+} else if (isOpenAI) {
     // Create custom openai provider config with baseUrl override
     // Omit apiKey so moltbot falls back to OPENAI_API_KEY env var
     console.log('Configuring OpenAI provider with base URL:', baseUrl);
@@ -284,6 +289,29 @@ fs.writeFileSync(configPath, JSON.stringify(config, null, 2));
 console.log('Configuration updated successfully');
 console.log('Config:', JSON.stringify(config, null, 2));
 EOFNODE
+
+# ============================================================
+# INJECT SETUP-TOKEN FOR SUBSCRIPTION AUTH
+# ============================================================
+# If CLAUDE_SETUP_TOKEN is set, write it into auth-profiles.json
+# so OpenClaw uses Claude subscription auth instead of API key
+if [ -n "$CLAUDE_SETUP_TOKEN" ]; then
+    echo "Injecting Claude setup-token for subscription auth..."
+    AGENT_AUTH_DIR="$CONFIG_DIR/agents/main/agent"
+    mkdir -p "$AGENT_AUTH_DIR"
+    cat > "$AGENT_AUTH_DIR/auth-profiles.json" << EOFAUTH
+{
+  "profiles": {
+    "anthropic:default": {
+      "type": "token",
+      "provider": "anthropic",
+      "token": "$CLAUDE_SETUP_TOKEN"
+    }
+  }
+}
+EOFAUTH
+    echo "Setup-token written to $AGENT_AUTH_DIR/auth-profiles.json"
+fi
 
 # ============================================================
 # START GATEWAY
