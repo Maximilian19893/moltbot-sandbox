@@ -57,9 +57,20 @@ export async function syncToR2(sandbox: Sandbox, env: MoltbotEnv): Promise<SyncR
     };
   }
 
-  // Run rsync to backup config to R2
+  // Run rsync to backup config, skills, and workspace to R2
   // Note: Use --no-times because s3fs doesn't support setting timestamps
-  const syncCmd = `rsync -r --no-times --delete --exclude='*.lock' --exclude='*.log' --exclude='*.tmp' /root/.clawdbot/ ${R2_MOUNT_PATH}/clawdbot/ && rsync -r --no-times --delete /root/clawd/skills/ ${R2_MOUNT_PATH}/skills/ && date -Iseconds > ${R2_MOUNT_PATH}/.last-sync`;
+  // Workspace backup includes memory, identity files, etc. but excludes large/temp dirs
+  const syncCmd = [
+    // 1. Config directory (sessions, auth, gateway config)
+    `rsync -r --no-times --delete --exclude='*.lock' --exclude='*.log' --exclude='*.tmp' /root/.clawdbot/ ${R2_MOUNT_PATH}/clawdbot/`,
+    // 2. Skills directory
+    `rsync -r --no-times --delete /root/clawd/skills/ ${R2_MOUNT_PATH}/skills/`,
+    // 3. Workspace directory (memory, SOUL.md, IDENTITY.md, USER.md, etc.)
+    // Exclude large/generated dirs that shouldn't be persisted
+    `rsync -r --no-times --delete --exclude='node_modules' --exclude='.git' --exclude='skills' --exclude='*.tmp' --exclude='.cache' --exclude='__pycache__' /root/clawd/ ${R2_MOUNT_PATH}/workspace/`,
+    // 4. Write sync timestamp
+    `date -Iseconds > ${R2_MOUNT_PATH}/.last-sync`,
+  ].join(' && ');
   
   try {
     const proc = await sandbox.startProcess(syncCmd);
