@@ -234,38 +234,6 @@ if (process.env.CLAUDE_SETUP_TOKEN) {
     // No custom provider needed; auth-profiles.json handles authentication
     console.log('Using Claude subscription auth (setup-token)');
     config.agents.defaults.model.primary = 'anthropic/claude-opus-4-6';
-
-    // Clean up any old custom provider config that might have been restored from R2 backup
-    // (e.g. AI Gateway baseUrl + apiKey from a previous configuration)
-    // The built-in Anthropic catalog + auth-profiles.json handles everything now
-    if (config.models?.providers?.anthropic) {
-        console.log('Removing old custom anthropic provider config (using subscription auth instead)');
-        delete config.models.providers.anthropic;
-        // Clean up empty providers/models objects
-        if (config.models.providers && Object.keys(config.models.providers).length === 0) {
-            delete config.models.providers;
-        }
-        if (config.models && Object.keys(config.models).length === 0) {
-            delete config.models;
-        }
-    }
-    // Also clean up old model aliases from previous AI Gateway setup
-    if (config.agents.defaults.models) {
-        const oldAliases = Object.keys(config.agents.defaults.models).filter(k =>
-            k.includes('claude-opus-4-5-20251101') ||
-            k.includes('claude-sonnet-4-5-20250929') ||
-            k.includes('claude-haiku-4-5-20251001')
-        );
-        if (oldAliases.length > 0) {
-            console.log('Removing old model aliases:', oldAliases.join(', '));
-            for (const alias of oldAliases) {
-                delete config.agents.defaults.models[alias];
-            }
-            if (Object.keys(config.agents.defaults.models).length === 0) {
-                delete config.agents.defaults.models;
-            }
-        }
-    }
 } else if (isOpenAI) {
     // Create custom openai provider config with baseUrl override
     // Omit apiKey so moltbot falls back to OPENAI_API_KEY env var
