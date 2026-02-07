@@ -131,6 +131,18 @@ else
 fi
 
 # ============================================================
+# DEBUG: Log which environment variables are present
+# ============================================================
+echo "=== Environment variable presence check ==="
+[ -n "$CLAUDE_SETUP_TOKEN" ] && echo "  CLAUDE_SETUP_TOKEN: SET (${#CLAUDE_SETUP_TOKEN} chars)" || echo "  CLAUDE_SETUP_TOKEN: NOT SET"
+[ -n "$ANTHROPIC_API_KEY" ] && echo "  ANTHROPIC_API_KEY: SET" || echo "  ANTHROPIC_API_KEY: NOT SET"
+[ -n "$SLACK_BOT_TOKEN" ] && echo "  SLACK_BOT_TOKEN: SET (${#SLACK_BOT_TOKEN} chars)" || echo "  SLACK_BOT_TOKEN: NOT SET"
+[ -n "$SLACK_APP_TOKEN" ] && echo "  SLACK_APP_TOKEN: SET (${#SLACK_APP_TOKEN} chars)" || echo "  SLACK_APP_TOKEN: NOT SET"
+[ -n "$CLAWDBOT_GATEWAY_TOKEN" ] && echo "  CLAWDBOT_GATEWAY_TOKEN: SET" || echo "  CLAWDBOT_GATEWAY_TOKEN: NOT SET"
+[ -n "$CLAWDBOT_DEV_MODE" ] && echo "  CLAWDBOT_DEV_MODE: $CLAWDBOT_DEV_MODE" || echo "  CLAWDBOT_DEV_MODE: NOT SET"
+echo "============================================"
+
+# ============================================================
 # UPDATE CONFIG FROM ENVIRONMENT VARIABLES
 # ============================================================
 node << EOFNODE
@@ -230,10 +242,10 @@ const baseUrl = (process.env.AI_GATEWAY_BASE_URL || process.env.ANTHROPIC_BASE_U
 const isOpenAI = baseUrl.endsWith('/openai');
 
 if (process.env.CLAUDE_SETUP_TOKEN) {
-    // Subscription auth via setup-token - use built-in Anthropic catalog
-    // No custom provider needed; auth-profiles.json handles authentication
+    // Subscription auth via setup-token
+    // Use the dated model ID that exists in the built-in anthropic provider catalog
     console.log('Using Claude subscription auth (setup-token)');
-    config.agents.defaults.model.primary = 'anthropic/claude-opus-4-6';
+    config.agents.defaults.model.primary = 'anthropic/claude-opus-4-5-20251101';
 } else if (isOpenAI) {
     // Create custom openai provider config with baseUrl override
     // Omit apiKey so moltbot falls back to OPENAI_API_KEY env var
@@ -293,13 +305,20 @@ EOFNODE
 # ============================================================
 # INJECT SETUP-TOKEN FOR SUBSCRIPTION AUTH
 # ============================================================
-# If CLAUDE_SETUP_TOKEN is set, write it into auth-profiles.json
-# so OpenClaw uses Claude subscription auth instead of API key
+# If CLAUDE_SETUP_TOKEN is set, inject it via the CLI (preferred) or manually
+# The CLI command writes auth-profiles.json in the correct format AND updates config
+# See: https://docs.clawd.bot/gateway/authentication#anthropic-setup-token-subscription-auth
 if [ -n "$CLAUDE_SETUP_TOKEN" ]; then
     echo "Injecting Claude setup-token for subscription auth..."
     AGENT_AUTH_DIR="$CONFIG_DIR/agents/main/agent"
     mkdir -p "$AGENT_AUTH_DIR"
-    cat > "$AGENT_AUTH_DIR/auth-profiles.json" << EOFAUTH
+
+    # Try CLI injection first (ensures correct auth-profiles.json format)
+    if echo "$CLAUDE_SETUP_TOKEN" | clawdbot models auth paste-token --provider anthropic 2>&1; then
+        echo "Setup-token injected via CLI (clawdbot models auth paste-token)"
+    else
+        echo "CLI paste-token not available, writing auth-profiles.json manually..."
+        cat > "$AGENT_AUTH_DIR/auth-profiles.json" << EOFAUTH
 {
   "profiles": {
     "anthropic:default": {
@@ -310,7 +329,12 @@ if [ -n "$CLAUDE_SETUP_TOKEN" ]; then
   }
 }
 EOFAUTH
-    echo "Setup-token written to $AGENT_AUTH_DIR/auth-profiles.json"
+        echo "Setup-token written to $AGENT_AUTH_DIR/auth-profiles.json (manual)"
+    fi
+
+    # Log auth status for debugging
+    echo "Auth profiles dir: $AGENT_AUTH_DIR"
+    ls -la "$AGENT_AUTH_DIR/" 2>/dev/null || true
 fi
 
 # ============================================================
