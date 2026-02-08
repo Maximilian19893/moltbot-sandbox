@@ -6,19 +6,41 @@
 # Use template: "Edit Cloudflare Workers"
 # CLOUDFLARE_API_TOKEN=your-api-token
 
+# === AI Provider Configuration (choose one) ===
+
+# Option 1: Cloudflare AI Gateway (preferred - supports any provider)
+# CLOUDFLARE_AI_GATEWAY_API_KEY=your-provider-api-key
+# CF_AI_GATEWAY_ACCOUNT_ID=your-account-id
+# CF_AI_GATEWAY_GATEWAY_ID=your-gateway-id
+# CF_AI_GATEWAY_MODEL=anthropic/claude-sonnet-4-5
+
+# Option 2: Direct Anthropic API key
 ANTHROPIC_API_KEY=sk-ant-...
+
+# Option 3: Direct OpenAI API key
+# OPENAI_API_KEY=sk-...
+
+# Option 4: Claude Max/Pro subscription auth (setup-token)
+# CLAUDE_SETUP_TOKEN=your-setup-token
+
+# Option 5: Legacy AI Gateway (deprecated, use option 1 instead)
+# AI_GATEWAY_API_KEY=your-api-key
+# AI_GATEWAY_BASE_URL=https://gateway.ai.cloudflare.com/v1/{account_id}/{gateway_id}/anthropic
+
+# === Development Settings ===
 
 # Local development mode - skips Cloudflare Access auth and bypasses device pairing
 # DEV_MODE=true
 
 # E2E test mode - skips Cloudflare Access auth but keeps device pairing enabled
-# Use this for automated tests that need to test the real pairing flow
 # E2E_TEST_MODE=true
 
 # Enable debug routes at /debug/* (optional)
 # DEBUG_ROUTES=true
 
-# Optional - set a fixed token instead of auto-generated
+# === Authentication ===
+
+# Gateway token for accessing the Control UI
 MOLTBOT_GATEWAY_TOKEN=dev-token-change-in-prod
 
 # Cloudflare Access configuration for /_admin and /api routes
@@ -26,10 +48,22 @@ MOLTBOT_GATEWAY_TOKEN=dev-token-change-in-prod
 # CF_ACCESS_TEAM_DOMAIN=myteam.cloudflareaccess.com
 # CF_ACCESS_AUD=your-application-audience-tag
 
-# Optional chat channels
+# === Optional Chat Channels ===
 # TELEGRAM_BOT_TOKEN=optional
 # DISCORD_BOT_TOKEN=optional
+# SLACK_BOT_TOKEN=optional
+# SLACK_APP_TOKEN=optional
 
-# CDP (Chrome DevTools Protocol) configuration for browser automation
+# === Optional Features ===
+
+# R2 persistent storage
+# R2_ACCESS_KEY_ID=your-key-id
+# R2_SECRET_ACCESS_KEY=your-secret-key
+# CF_ACCOUNT_ID=your-account-id
+
+# CDP (Chrome DevTools Protocol) for browser automation
 # CDP_SECRET=shared-secret-for-cdp-auth
 # WORKER_URL=https://your-worker.example.com
+
+# Container sleep timeout (default: never)
+# SANDBOX_SLEEP_AFTER=10m
