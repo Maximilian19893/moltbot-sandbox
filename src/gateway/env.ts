@@ -20,8 +20,14 @@ export function buildEnvVars(env: MoltbotEnv): Record<string, string> {
     envVars.CF_AI_GATEWAY_GATEWAY_ID = env.CF_AI_GATEWAY_GATEWAY_ID;
   }
 
-  // Direct provider keys
-  if (env.ANTHROPIC_API_KEY) envVars.ANTHROPIC_API_KEY = env.ANTHROPIC_API_KEY;
+  // Claude subscription auth via setup-token (custom addition)
+  // When setup-token is used, DON'T pass ANTHROPIC_API_KEY to avoid conflicts
+  if (env.CLAUDE_SETUP_TOKEN) {
+    envVars.CLAUDE_SETUP_TOKEN = env.CLAUDE_SETUP_TOKEN;
+  }
+
+  // Direct provider keys (skip ANTHROPIC_API_KEY when using setup-token)
+  if (!env.CLAUDE_SETUP_TOKEN && env.ANTHROPIC_API_KEY) envVars.ANTHROPIC_API_KEY = env.ANTHROPIC_API_KEY;
   if (env.OPENAI_API_KEY) envVars.OPENAI_API_KEY = env.OPENAI_API_KEY;
 
   // Legacy AI Gateway support: AI_GATEWAY_BASE_URL + AI_GATEWAY_API_KEY
@@ -29,17 +35,10 @@ export function buildEnvVars(env: MoltbotEnv): Record<string, string> {
   if (env.AI_GATEWAY_API_KEY && env.AI_GATEWAY_BASE_URL) {
     const normalizedBaseUrl = env.AI_GATEWAY_BASE_URL.replace(/\/+$/, '');
     envVars.AI_GATEWAY_BASE_URL = normalizedBaseUrl;
-    // Legacy path routes through Anthropic base URL
     envVars.ANTHROPIC_BASE_URL = normalizedBaseUrl;
     envVars.ANTHROPIC_API_KEY = env.AI_GATEWAY_API_KEY;
   } else if (env.ANTHROPIC_BASE_URL) {
     envVars.ANTHROPIC_BASE_URL = env.ANTHROPIC_BASE_URL;
-  }
-
-  // Claude subscription auth via setup-token (custom addition)
-  // When setup-token is used, pass it to the container for auth-profiles.json injection
-  if (env.CLAUDE_SETUP_TOKEN) {
-    envVars.CLAUDE_SETUP_TOKEN = env.CLAUDE_SETUP_TOKEN;
   }
 
   // Map MOLTBOT_GATEWAY_TOKEN to OPENCLAW_GATEWAY_TOKEN (container expects this name)
